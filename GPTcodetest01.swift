@@ -49,12 +49,3 @@ struct KeyButton: View {
         }
     }
 }
-
-@main
-struct SoftKeyboardApp: App {
-    var body: some Scene {
-        WindowGroup {
-            ContentView()
-        }
-    }
-}
