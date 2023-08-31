@@ -65,7 +65,7 @@ struct KeyButton: View {
         Button(action: action) {
             Text(title)
                 .font(.title)
-                .frame(width: 80, height: 60)
+                .frame(width: 86, height: 80)
                 .background(Color.blue)
                 .foregroundColor(.white)
                 .cornerRadius(10)
