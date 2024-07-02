@@ -1,0 +1,278 @@
+import SwiftUI
+
+struct ContentView: View {
+    @State private var inputText: String = ""
+    @State private var randomChars: String = String((0..<500).compactMap { _ in "■□●○♥♡▲△◉◎◒◈⬌⬄◬★⛤☾☻⬟⬠⛊⚐⚑♠Ω".randomElement() })
+    @State private var buttonPressCount = 0
+    @State private var startTime: Date? = nil
+    @State private var showAlert = false
+    @State private var alertMessage = ""
+    @State private var currentPage = 0
+    
+    var body: some View {
+        VStack() {
+            Text(pageContent())
+                .font(.title)
+                .padding()
+            
+            ScrollingTextView(text: $inputText)
+                .frame(height: 60)
+                .padding()
+                .border(Color.gray, width: 1)
+                .onChange(of: inputText, perform: { value in
+                    if startTime == nil && inputText.count == 1 {
+                        startTime = Date()
+                    }
+                    
+                    if inputText.count % 100 == 0 && inputText.count <= 500 {
+                        currentPage = inputText.count / 100
+                    }
+                    
+                    if inputText.count == 500 {
+                        let elapsedTime = Date().timeIntervalSince(startTime!)
+                        let roundedTime = Double(String(format: "%.3f", elapsedTime)) ?? elapsedTime
+                        let correctCount = zip(inputText.prefix(500), randomChars).filter { $0 == $1 }.count
+                        let accuracy = Double(correctCount) / 500.0 * 100
+                        let levenshteinAccuracy = 100 - Double(levenshteinDistance(inputText, String(randomChars))) / 500.0 * 100
+                        
+                        alertMessage = "Time elapsed: \(roundedTime) seconds\nAccuracy: \(accuracy)%\nLevenshtein Accuracy: \(levenshteinAccuracy)%"
+                        showAlert = true
+                    }
+                })
+            
+            // Your custom keyboard buttons
+            VStack{
+                HStack {
+                    KeyButton(title: "\u{25A0}", action: { appendCharacter("\u{25A0}") })
+                    KeyButton(title: "\u{25A1}", action: { appendCharacter("\u{25A1}") })
+                    KeyButton(title: "\u{25CF}", action: { appendCharacter("\u{25CF}") })
+                    KeyButton(title: "\u{25CB}", action: { appendCharacter("\u{25CB}") })
+                    KeyButton(title: "\u{2665}", action: { appendCharacter("\u{2665}") })
+                    KeyButton(title: "\u{2661}", action: { appendCharacter("\u{2661}") })
+                    KeyButton(title: "\u{25B2}", action: { appendCharacter("\u{25B2}") })
+                    KeyButton(title: "\u{25B3}", action: { appendCharacter("\u{25B3}") })
+                    KeyButton(title: "\u{25C9}", action: { appendCharacter("\u{25C9}") })
+                    KeyButton(title: "\u{25CE}", action: { appendCharacter("\u{25CE}") })         
+                    
+                }
+                
+                HStack {
+                    KeyButton(title: "\u{25D2}", action: { appendCharacter("\u{25D2}") })
+                    KeyButton(title: "\u{25C8}", action: { appendCharacter("\u{25C8}") })
+                    KeyButton(title: "\u{2B0C}", action: { appendCharacter("\u{2B0C}") })
+                    KeyButton(title: "\u{2B04}", action: { appendCharacter("\u{2B04}") })
+                    KeyButton(title: "\u{25EC}", action: { appendCharacter("\u{25EC}") })
+                    KeyButton(title: "\u{2605}", action: { appendCharacter("\u{2605}") })
+                    KeyButton(title: "\u{26E4}", action: { appendCharacter("\u{26E4}") })
+                    KeyButton(title: "\u{263E}", action: { appendCharacter("\u{263E}") })
+                    KeyButton(title: "\u{263B}", action: { appendCharacter("\u{263B}") })
+                    
+                }
+                
+                HStack {
+                    KeyButton(title: "\u{2B1F}", action: { appendCharacter("\u{2B1F}") })
+                    KeyButton(title: "\u{2B20}", action: { appendCharacter("\u{2B20}") })
+                    KeyButton(title: "\u{26CA}", action: { appendCharacter("\u{26CA}") })
+                    KeyButton(title: "\u{2690}", action: { appendCharacter("\u{2690}") })
+                    KeyButton(title: "\u{2691}", action: { appendCharacter("\u{2691}") })
+                    KeyButton(title: "\u{2660}", action: { appendCharacter("\u{2660}") })
+                    KeyButton(title: "\u{03A9}", action: { appendCharacter("\u{03A9}") })
+                }         
+                
+                
+                
+            }
+        }
+        
+        .alert(isPresented: $showAlert) {
+            Alert(title: Text("Results"), message: Text(alertMessage), dismissButton: .default(Text("Confirm")) {
+                inputText = ""
+                startTime = nil
+            })
+        }
+        .frame(width: 1100, height: 600, alignment: .bottom)
+        .border(Color.red)
+    }
+    
+    func pageContent() -> String {
+        let start = currentPage * 100
+        let end = min((currentPage + 1) * 100, randomChars.count)
+        
+        if start < end {
+            let startIndex = randomChars.index(randomChars.startIndex, offsetBy: start)
+            let endIndex = randomChars.index(randomChars.startIndex, offsetBy: end)
+            let pageText = String(randomChars[startIndex..<endIndex])
+            
+            var newPageText = ""
+            var line = ""
+            for char in pageText {
+                if line.count < 20 {
+                    line.append(char)
+                } else {
+                    newPageText += line + "\n"
+                    line = String(char)
+                }
+            }
+            newPageText += line
+            
+            return newPageText
+        }
+        
+        return ""
+    }
+    
+    
+    func levenshteinDistance(_ a: String, _ b: String) -> Int {
+        let (a, b) = (Array(a), Array(b))
+        var distance = [[Int]]()
+        for _ in 0...a.count {
+            distance.append([Int](repeating: 0, count: b.count + 1))
+        }
+        
+        for i in 0...a.count {
+            distance[i][0] = i
+        }
+        for j in 0...b.count {
+            distance[0][j] = j
+        }
+        
+        for i in 1...a.count {
+            for j in 1...b.count {
+                distance[i][j] = min(
+                    distance[i-1][j] + 1,
+                    distance[i][j-1] + 1,
+                    distance[i-1][j-1] + (a[i-1] == b[j-1] ? 0 : 1)
+                )
+            }
+        }
+        return distance[a.count][b.count]
+    }
+    
+    
+    func appendCharacter(_ char: String) {
+        inputText += char
+        if inputText.count % 21 == 0 && !inputText.hasSuffix("\n") {
+            inputText += "\n"
+        }
+    }
+    
+    
+    
+    func startTimerAndCountPresses() {
+        if startTime == nil && inputText.count == 1 {
+            startTime = Date()
+        }
+        
+        if inputText.count % 100 == 0 && inputText.count <= 500 {
+            currentPage = (inputText.count / 100) - 1
+        }
+        
+        if inputText.count == 500 {
+            if let start = startTime {
+                let elapsedTime = Date().timeIntervalSince(start)
+                let roundedTime = Double(String(format: "%.3f", elapsedTime)) ?? elapsedTime
+                let correctCount = zip(inputText.prefix(500), randomChars).filter { $0 == $1 }.count
+                let accuracy = Double(correctCount) / 500.0 * 100
+                let levenshteinAccuracy = 100 - Double(levenshteinDistance(inputText, String(randomChars))) / 500.0 * 100
+                
+                alertMessage = "Time elapsed: \(roundedTime) seconds\nAccuracy: \(accuracy)%\nLevenshtein Accuracy: \(levenshteinAccuracy)%"
+                showAlert = true
+            }
+            
+            // Reset
+            startTime = nil
+            currentPage = 0
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                if self.showAlert == false {
+                    self.inputText = ""
+                }
+            }
+        }
+    }
+}
+
+struct ScrollingTextView: UIViewRepresentable {
+    @Binding var text: String
+    
+    func makeUIView(context: Context) -> UITextView {
+        let textView = UITextView()
+        textView.delegate = context.coordinator
+        textView.font = UIFont.systemFont(ofSize: 50)
+        
+        // Style adjustments
+        textView.backgroundColor = UIColor.lightGray  // Change background color
+        textView.layer.borderColor = UIColor.darkGray.cgColor  // Change border color
+        textView.layer.borderWidth = 2  // Change border width
+        textView.layer.cornerRadius = 10
+        // Add corner radius
+        return textView
+    }
+    
+    func updateUIView(_ uiView: UITextView, context: Context) {
+        uiView.text = self.text
+    }
+    
+    func makeCoordinator() -> Coordinator {
+        Coordinator(self)
+    }
+    
+    class Coordinator: NSObject, UITextViewDelegate {
+        var parent: ScrollingTextView
+        
+        init(_ parent: ScrollingTextView) {
+            self.parent = parent
+        }
+        
+        func textViewDidChange(_ textView: UITextView) {
+            parent.text = textView.text
+            
+            // Handle scrolling here
+            let range = NSMakeRange(textView.text.count - 1, 1)
+            textView.scrollRangeToVisible(range)
+        }
+    }
+}
+
+struct KeyButton: View {
+    let title: String
+    let action: () -> Void
+    
+    var body: some View {
+        Button(action: action) {
+            Text(title)
+                .font(.title)
+                .frame(width: 85, height: 80)
+                .background(Color.gray)
+                .foregroundColor(.white)
+                .cornerRadius(10)
+        }
+    }
+}
+
+extension String {
+    func chunked(by length: Int) -> [String] {
+        var result = [String]()
+        var collectedCharacters = [Character]()
+        var count = 0
+        
+        for character in self {
+            collectedCharacters.append(character)
+            count += 1
+            
+            if count == length {
+                // Append the segment and reset the count and collector array
+                result.append(String(collectedCharacters))
+                count = 0
+                collectedCharacters.removeAll()
+            }
+        }
+        
+        // Append any remaining characters
+        if !collectedCharacters.isEmpty {
+            result.append(String(collectedCharacters))
+        }
+        
+        return result
+    }
+}
+
